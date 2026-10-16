@@ -1,12 +1,12 @@
-import axios from "axios"
+import axios from "axios";
 
-const rawBaseURL = import.meta.env.VITE_API_URL || "https://ai-interview-prep-platform-sooty.vercel.app"
-const cleanBaseURL = rawBaseURL.replace(/\/+$/, "")
+const rawBaseURL = import.meta.env.VITE_API_URL || "https://ai-interview-prep-platform-sooty.vercel.app";
+const cleanBaseURL = rawBaseURL.replace(/\/+$/, "");
 
 const api = axios.create({
     baseURL: cleanBaseURL,
     withCredentials: true
-})
+});
 
 /**
  * @description Service to generate interview report based on user self description, resume and job description.

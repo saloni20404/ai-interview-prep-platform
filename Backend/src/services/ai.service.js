@@ -74,21 +74,25 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    const puppeteer = require("puppeteer-core");
-    const chromium = require("@sparticuz/chromium");
+    const puppeteerModule = await import("puppeteer-core");
+    const puppeteer = puppeteerModule.default || puppeteerModule;
+
+    const chromiumModule = await import("@sparticuz/chromium");
+    const chromium = chromiumModule.default || chromiumModule;
+
     let browser = null;
     try {
-        // Detect if running locally or on Vercel AWS Lambda
         const isLocal = process.env.NODE_ENV !== "production";
 
         browser = await puppeteer.launch({
             args: isLocal ? [] : chromium.args,
             defaultViewport: chromium.defaultViewport,
             executablePath: isLocal
-                ? undefined // Uses local system chrome if set up, or standard puppeteer
+                ? undefined
                 : await chromium.executablePath(),
             headless: isLocal ? true : chromium.headless,
         });
+
 
         const page = await browser.newPage();
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });

@@ -7,6 +7,15 @@ const api = axios.create({
     baseURL: BACKEND_URL,
     withCredentials: true
 });
+
+// Inject stored token as Authorization header on every request (needed for cross-domain on Vercel)
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+});
 /**
  * @description Service to generate interview report based on user self description, resume and job description.
  */

@@ -1,11 +1,13 @@
 import React, { useState, useRef } from 'react'
 import "../style/home.scss"
 import { useInterview } from '../hooks/useInterview.js'
-import { useNavigate } from 'react-router'
+import { useAuth } from '../../auth/hooks/useAuth.js'
+import { useNavigate, Link } from 'react-router'
 
 const Home = () => {
 
     const { loading, generateReport, reports } = useInterview()
+    const { user, handleLogout } = useAuth()
     const [ jobDescription, setJobDescription ] = useState("")
     const [ selfDescription, setSelfDescription ] = useState("")
     const [ selectedFileName, setSelectedFileName ] = useState("")
@@ -13,6 +15,12 @@ const Home = () => {
     const resumeInputRef = useRef()
 
     const navigate = useNavigate()
+
+    const onSignOut = async () => {
+        await handleLogout()
+        navigate('/login')
+    }
+
 
     const handleGenerateReport = async () => {
         setErrorMessage("")
@@ -59,11 +67,39 @@ const Home = () => {
     return (
         <div className='home-page'>
 
+            {/* Top Navigation Bar */}
+            <nav style={{ width: "100%", maxWidth: "900px", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 0", borderBottom: "1px solid #2a3348", marginBottom: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: "700", fontSize: "1.1rem", color: "#e6edf3" }}>
+                    <span style={{ color: "#ff2d78" }}>⚡</span> Interview Prep AI
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                    {user ? (
+                        <>
+                            <span style={{ fontSize: "0.9rem", color: "#7d8590" }}>
+                                Signed in as <strong style={{ color: "#e6edf3" }}>{user.username || user.email}</strong>
+                            </span>
+                            <button
+                                onClick={onSignOut}
+                                style={{ background: "transparent", border: "1px solid #ff2d78", color: "#ff2d78", padding: "0.35rem 0.85rem", borderRadius: "6px", cursor: "pointer", fontSize: "0.85rem", fontWeight: "600", transition: "all 0.2s" }}
+                            >
+                                Sign Out
+                            </button>
+                        </>
+                    ) : (
+                        <div style={{ display: "flex", gap: "0.75rem" }}>
+                            <Link to="/login" style={{ color: "#e6edf3", textDecoration: "none", fontSize: "0.9rem" }}>Login</Link>
+                            <Link to="/register" style={{ color: "#ff2d78", textDecoration: "none", fontSize: "0.9rem", fontWeight: "600" }}>Register</Link>
+                        </div>
+                    )}
+                </div>
+            </nav>
+
             {/* Page Header */}
             <header className='page-header'>
                 <h1>Create Your Custom <span className='highlight'>Interview Plan</span></h1>
                 <p>Let our AI analyze the job requirements and your unique profile to build a winning strategy.</p>
             </header>
+
 
             {/* Main Card */}
             <div className='interview-card'>

@@ -31,7 +31,7 @@ const interviewReportSchema = z.object({
 });
 
 async function callAiWithFallback({ prompt, schema }) {
-    const candidateModels = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash"];
+    const candidateModels = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-flash-latest"];
     let lastError = null;
 
     for (const model of candidateModels) {

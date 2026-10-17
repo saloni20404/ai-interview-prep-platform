@@ -74,15 +74,18 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    const puppeteerModule = await import("puppeteer-core");
+    const dynamicImport = new Function("specifier", "return import(specifier)");
+
+    const puppeteerModule = await dynamicImport("puppeteer-core");
     const puppeteer = puppeteerModule.default || puppeteerModule;
 
-    const chromiumModule = await import("@sparticuz/chromium");
+    const chromiumModule = await dynamicImport("@sparticuz/chromium");
     const chromium = chromiumModule.default || chromiumModule;
 
     let browser = null;
     try {
         const isLocal = process.env.NODE_ENV !== "production";
+
 
         browser = await puppeteer.launch({
             args: isLocal ? [] : chromium.args,

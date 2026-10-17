@@ -1,21 +1,5 @@
-import axios from "axios";
+import api from "../../../lib/api";
 
-// Uses VITE_API_URL env variable — set this in .env for local dev and in Vercel project settings for production
-const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
-const api = axios.create({
-    baseURL: BACKEND_URL,
-    withCredentials: true
-});
-
-// Inject stored token as Authorization header on every request (needed for cross-domain on Vercel)
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-        config.headers["Authorization"] = `Bearer ${token}`;
-    }
-    return config;
-});
 /**
  * @description Service to generate interview report based on user self description, resume and job description.
  */

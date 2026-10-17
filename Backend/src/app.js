@@ -28,16 +28,29 @@
 
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const connectToDB = require("./config/database");
+
 const app = express();
 
 const authRoutes = require("./routes/auth.routes");
 const interviewRoutes = require("./routes/interview.routes");
 
-// 1. Explicit Dynamic CORS Setup
+// 1. CORS — allow localhost, Vercel deployments, and custom FRONTEND_URL
+const configuredOrigin = process.env.FRONTEND_URL?.replace(/\/$/, "");
+
 app.use(cors({
-    origin: function (origin, callback) {
+    origin: function(origin, callback) {
         if (!origin) return callback(null, true);
-        return callback(null, origin);
+        if (
+            origin === "http://localhost:5173" ||
+            origin === "http://localhost:3000" ||
+            (configuredOrigin && origin === configuredOrigin) ||
+            origin.endsWith(".vercel.app")
+        ) {
+            return callback(null, true);
+        }
+        return callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
@@ -45,13 +58,25 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
-// 2. Health check route (Direct Backend Check)
+// 2. Ensure Database is connected for serverless invocations
+app.use(async (req, res, next) => {
+    try {
+        await connectToDB();
+        next();
+    } catch (err) {
+        console.error("Database connection error in middleware:", err);
+        res.status(500).json({ message: "Failed to connect to database" });
+    }
+});
+
+// 3. Health check route
 app.get("/", (req, res) => {
     res.status(200).json({ message: "Backend Server is Running Live!" });
 });
 
-// 3. API Routes Mounting
+// 4. API Routes Mounting
 app.use("/api/auth", authRoutes);
 app.use("/api/interview", interviewRoutes);
 

@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const BACKEND_URL = "https://ai-interview-prep-platform-sooty.vercel.app";
+// Uses VITE_API_URL env variable — set this in .env for local dev and in Vercel project settings for production
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const api = axios.create({
     baseURL: BACKEND_URL,
@@ -12,9 +13,13 @@ const api = axios.create({
 export const generateInterviewReport = async ({ jobDescription, selfDescription, resumeFile }) => {
 
     const formData = new FormData()
-    formData.append("jobDescription", jobDescription)
-    formData.append("selfDescription", selfDescription)
-    formData.append("resume", resumeFile)
+    formData.append("jobDescription", jobDescription || "")
+    if (selfDescription) {
+        formData.append("selfDescription", selfDescription)
+    }
+    if (resumeFile) {
+        formData.append("resume", resumeFile)
+    }
 
     const response = await api.post("/api/interview/", formData, {
         headers: {

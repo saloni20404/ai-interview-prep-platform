@@ -32,20 +32,40 @@ const interviewReportSchema = z.object({
     title: z.string().describe("The title of the job for which the interview report is generated"),
 });
 
+async function callAiWithFallback({ prompt, schema }) {
+    const candidateModels = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash"];
+    let lastError = null;
+
+    for (const model of candidateModels) {
+        try {
+            const response = await ai.models.generateContent({
+                model,
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: zodToJsonSchema(schema),
+                }
+            });
+            return response;
+        } catch (err) {
+            console.warn(`Model ${model} failed, trying next candidate. Error:`, err.message);
+            lastError = err;
+        }
+    }
+
+    throw lastError;
+}
+
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
     const prompt = `Generate an interview report for a candidate with the following details:
-                        Resume: ${resume}
-                        Self Description: ${selfDescription}
+                        Resume: ${resume || "Not provided"}
+                        Self Description: ${selfDescription || "Not provided"}
                         Job Description: ${jobDescription}
     `;
 
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(interviewReportSchema),
-        }
+    const response = await callAiWithFallback({
+        prompt,
+        schema: interviewReportSchema
     });
 
     return JSON.parse(response.text);
@@ -105,13 +125,9 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
                     `;
 
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: zodToJsonSchema(resumePdfSchema),
-        }
+    const response = await callAiWithFallback({
+        prompt,
+        schema: resumePdfSchema
     });
 
     const jsonContent = JSON.parse(response.text);

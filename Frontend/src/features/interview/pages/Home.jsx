@@ -5,17 +5,47 @@ import { useNavigate } from 'react-router'
 
 const Home = () => {
 
-    const { loading, generateReport,reports } = useInterview()
+    const { loading, generateReport, reports } = useInterview()
     const [ jobDescription, setJobDescription ] = useState("")
     const [ selfDescription, setSelfDescription ] = useState("")
+    const [ selectedFileName, setSelectedFileName ] = useState("")
+    const [ errorMessage, setErrorMessage ] = useState("")
     const resumeInputRef = useRef()
 
     const navigate = useNavigate()
 
     const handleGenerateReport = async () => {
-        const resumeFile = resumeInputRef.current.files[ 0 ]
-        const data = await generateReport({ jobDescription, selfDescription, resumeFile })
-        navigate(`/interview/${data._id}`)
+        setErrorMessage("")
+        const resumeFile = resumeInputRef.current?.files?.[ 0 ]
+
+        if (!jobDescription || !jobDescription.trim()) {
+            setErrorMessage("Please paste the target job description.")
+            return
+        }
+
+        if (!resumeFile && (!selfDescription || !selfDescription.trim())) {
+            setErrorMessage("Please upload a resume (PDF) or provide a quick self-description.")
+            return
+        }
+
+        try {
+            const data = await generateReport({ jobDescription, selfDescription, resumeFile })
+            if (data && data._id) {
+                navigate(`/interview/${data._id}`)
+            }
+        } catch (err) {
+            setErrorMessage(err.response?.data?.message || err.message || "Failed to generate interview strategy. Please try again.")
+        }
+    }
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            setSelectedFileName(file.name)
+            setErrorMessage("")
+        } else {
+            setSelectedFileName("")
+        }
     }
 
     if (loading) {
@@ -79,9 +109,11 @@ const Home = () => {
                                 <span className='dropzone__icon'>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>
                                 </span>
-                                <p className='dropzone__title'>Click to upload or drag &amp; drop</p>
-                                <p className='dropzone__subtitle'>PDF or DOCX (Max 5MB)</p>
-                                <input ref={resumeInputRef} hidden type='file' id='resume' name='resume' accept='.pdf,.docx' />
+                                <p className='dropzone__title'>
+                                    {selectedFileName ? `Selected: ${selectedFileName}` : 'Click to upload or drag & drop'}
+                                </p>
+                                <p className='dropzone__subtitle'>PDF (Max 3MB)</p>
+                                <input ref={resumeInputRef} onChange={handleFileChange} hidden type='file' id='resume' name='resume' accept='.pdf' />
                             </label>
                         </div>
 
@@ -109,6 +141,12 @@ const Home = () => {
                         </div>
                     </div>
                 </div>
+
+                {errorMessage && (
+                    <div style={{ margin: "0 2rem 1rem", padding: "0.75rem 1rem", background: "#fef2f2", border: "1px solid #f87171", borderRadius: "8px", color: "#991b1b", fontSize: "0.9rem" }}>
+                        {errorMessage}
+                    </div>
+                )}
 
                 {/* Card Footer */}
                 <div className='interview-card__footer'>

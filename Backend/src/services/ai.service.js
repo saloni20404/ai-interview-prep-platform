@@ -2,9 +2,13 @@ const { GoogleGenAI } = require("@google/genai");
 const { z } = require("zod");
 const { zodToJsonSchema } = require("zod-to-json-schema");
 
+const rawKey = (process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY || "").trim();
+const cleanApiKey = rawKey ? rawKey.split(/[\r\n\s]+/)[0].trim() : "";
+
 const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY
+    apiKey: cleanApiKey
 });
+
 
 const interviewReportSchema = z.object({
     matchScore: z.number().describe("A score between 0 and 100 indicating how well the candidate's profile matches the job describe"),

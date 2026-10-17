@@ -1,12 +1,12 @@
-const { GoogleGenAI } = require("@google/genai")
-const { z } = require("zod")
-const { zodToJsonSchema } = require("zod-to-json-schema")
-const puppeteer = require("puppeteer")
+const { GoogleGenAI } = require("@google/genai");
+const { z } = require("zod");
+const { zodToJsonSchema } = require("zod-to-json-schema");
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 
 const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENAI_API_KEY
-})
-
+    apiKey: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY
+});
 
 const interviewReportSchema = z.object({
     matchScore: z.number().describe("A score between 0 and 100 indicating how well the candidate's profile matches the job describe"),
@@ -30,57 +30,67 @@ const interviewReportSchema = z.object({
         tasks: z.array(z.string()).describe("List of tasks to be done on this day to follow the preparation plan, e.g. read a specific book or article, solve a set of problems, watch a video etc.")
     })).describe("A day-wise preparation plan for the candidate to follow in order to prepare for the interview effectively"),
     title: z.string().describe("The title of the job for which the interview report is generated"),
-})
+});
 
 async function generateInterviewReport({ resume, selfDescription, jobDescription }) {
-
-
     const prompt = `Generate an interview report for a candidate with the following details:
                         Resume: ${resume}
                         Self Description: ${selfDescription}
                         Job Description: ${jobDescription}
-`
+    `;
 
     const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
             responseSchema: zodToJsonSchema(interviewReportSchema),
         }
-    })
+    });
 
-    return JSON.parse(response.text)
-
-
+    return JSON.parse(response.text);
 }
 
-
-
 async function generatePdfFromHtml(htmlContent) {
-    const browser = await puppeteer.launch()
-    const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+    let browser = null;
+    try {
+        // Detect if running locally or on Vercel AWS Lambda
+        const isLocal = process.env.NODE_ENV !== "production";
 
-    const pdfBuffer = await page.pdf({
-        format: "A4", margin: {
-            top: "20mm",
-            bottom: "20mm",
-            left: "15mm",
-            right: "15mm"
+        browser = await puppeteer.launch({
+            args: isLocal ? [] : chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: isLocal
+                ? undefined // Uses local system chrome if set up, or standard puppeteer
+                : await chromium.executablePath(),
+            headless: isLocal ? true : chromium.headless,
+        });
+
+        const page = await browser.newPage();
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+        const pdfBuffer = await page.pdf({
+            format: "A4",
+            margin: {
+                top: "20mm",
+                bottom: "20mm",
+                left: "15mm",
+                right: "15mm"
+            }
+        });
+
+        return pdfBuffer;
+    } finally {
+        if (browser !== null) {
+            await browser.close();
         }
-    })
-
-    await browser.close()
-
-    return pdfBuffer
+    }
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
-
     const resumePdfSchema = z.object({
         html: z.string().describe("The HTML content of the resume which can be converted to PDF using any library like puppeteer")
-    })
+    });
 
     const prompt = `Generate resume for a candidate with the following details:
                         Resume: ${resume}
@@ -93,24 +103,21 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         you can highlight the content using some colors or different font styles but the overall design should be simple and professional.
                         The content should be ATS friendly, i.e. it should be easily parsable by ATS systems without losing important information.
                         The resume should not be so lengthy, it should ideally be 1-2 pages long when converted to PDF. Focus on quality rather than quantity and make sure to include all the relevant information that can increase the candidate's chances of getting an interview call for the given job description.
-                    `
+                    `;
 
     const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
             responseMimeType: "application/json",
             responseSchema: zodToJsonSchema(resumePdfSchema),
         }
-    })
+    });
 
+    const jsonContent = JSON.parse(response.text);
+    const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
 
-    const jsonContent = JSON.parse(response.text)
-
-    const pdfBuffer = await generatePdfFromHtml(jsonContent.html)
-
-    return pdfBuffer
-
+    return pdfBuffer;
 }
 
-module.exports = { generateInterviewReport, generateResumePdf }
+module.exports = { generateInterviewReport, generateResumePdf };

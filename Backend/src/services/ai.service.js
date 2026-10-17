@@ -1,8 +1,6 @@
 const { GoogleGenAI } = require("@google/genai");
 const { z } = require("zod");
 const { zodToJsonSchema } = require("zod-to-json-schema");
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY
@@ -72,6 +70,8 @@ async function generateInterviewReport({ resume, selfDescription, jobDescription
 }
 
 async function generatePdfFromHtml(htmlContent) {
+    const puppeteer = require("puppeteer-core");
+    const chromium = require("@sparticuz/chromium");
     let browser = null;
     try {
         // Detect if running locally or on Vercel AWS Lambda

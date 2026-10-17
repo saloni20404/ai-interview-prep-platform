@@ -7,13 +7,22 @@ async function connectToDB() {
         return mongoose.connection;
     }
 
+    if (!process.env.MONGO_URI) {
+        console.error("MONGO_URI environment variable is missing!");
+        throw new Error("MONGO_URI environment variable is not defined");
+    }
+
     try {
-        await mongoose.connect(process.env.MONGO_URI);
+        await mongoose.connect(process.env.MONGO_URI, {
+            serverSelectionTimeoutMS: 5000,
+            connectTimeoutMS: 5000,
+        });
         isConnected = true;
         console.log("Connected to Database");
         return mongoose.connection;
     } catch (err) {
-        console.error("Database connection error:", err);
+        console.error("Database connection error:", err.message);
+        throw err;
     }
 }
 

@@ -7,12 +7,25 @@ const interviewRouter = express.Router()
 
 
 
+const handleUpload = (req, res, next) => {
+    upload.single("resume")(req, res, (err) => {
+        if (err) {
+            console.error("Multer upload error:", err.message);
+            return res.status(400).json({
+                message: err.message || "Failed to process resume file."
+            });
+        }
+        next();
+    });
+};
+
 /**
  * @route POST /api/interview/
  * @description generate new interview report on the basis of user self description,resume pdf and job description.
  * @access private
  */
-interviewRouter.post("/", authMiddleware.authUser, upload.single("resume"), interviewController.generateInterViewReportController)
+interviewRouter.post("/", authMiddleware.authUser, handleUpload, interviewController.generateInterViewReportController)
+
 
 /**
  * @route GET /api/interview/report/:interviewId

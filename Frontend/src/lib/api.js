@@ -12,11 +12,11 @@ api.interceptors.request.use((config) => {
     const raw = localStorage.getItem("token");
     if (raw) {
         const token = raw.trim();
-        // A valid JWT has no spaces; if it does, it's corrupted — clear it
-        if (token && !token.includes(" ")) {
+        // A valid JWT is 3 base64 segments that always starts with 'eyJ'
+        if (token && token.startsWith("eyJ") && !token.includes(" ") && token.split(".").length === 3) {
             config.headers["Authorization"] = `Bearer ${token}`;
         } else {
-            console.warn("Corrupted token detected in localStorage — clearing it.");
+            console.warn("Non-JWT or corrupted token detected in localStorage — clearing it.");
             localStorage.removeItem("token");
         }
     }

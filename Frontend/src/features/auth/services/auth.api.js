@@ -51,20 +51,19 @@
 //     }
 // }
 
-
 import axios from "axios";
 
-const rawUrl = import.meta.env.VITE_API_URL || "https://ai-interview-prep-platform-sooty.vercel.app";
-const cleanBaseURL = rawUrl.trim().replace(/\/+$/, "");
+// Absolute production URL guaranteed
+const BACKEND_URL = "https://ai-interview-prep-platform-sooty.vercel.app";
 
 const api = axios.create({
-    baseURL: cleanBaseURL,
+    baseURL: BACKEND_URL,
     withCredentials: true
 });
 
 export async function register({ username, email, password }) {
     try {
-        const response = await api.post("/api/auth/register", { username, email, password });
+        const response = await api.post('/api/auth/register', { username, email, password });
         return response.data;
     } catch (err) {
         console.log(err);
